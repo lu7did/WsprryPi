@@ -46,6 +46,8 @@
 #include <sys/timex.h>
 #include "GPIOClass.h"
 
+using namespace std;
+
 #ifdef __cplusplus
 extern "C" {
 #include "mailbox.h"
@@ -304,9 +306,6 @@ void disable_clock() {
 // Turn on TX
 void txon() {
 
-  // Set output ON
-  gpio27->setval_gpio("1");
-
   // Set function select for GPIO4.
   // Fsel 000 => input
   // Fsel 001 => output
@@ -348,7 +347,6 @@ void txoff() {
   //struct GPCTL setupword = {6/*SRC*/, 0, 0, 0, 0, 1,0x5a};
   //ACCESS_BUS_ADDR(CM_GP0CTL_BUS) = *((int*)&setupword);
   disable_clock();
-  gpio27->setval_gpio("0");
 
 }
 
@@ -438,6 +436,7 @@ void unSetupDMA(){
   struct DMAregs* DMA0 = (struct DMAregs*)&(ACCESS_BUS_ADDR(DMA_BUS_BASE));
   DMA0->CS =1<<31;  // reset dma controller
   txoff();
+
 }
 
 // Truncate at bit lsb. i.e. set all bits less than lsb to zero.
@@ -601,7 +600,7 @@ void wspr(
 ) {
 
 
-  GPIOClass* gpio27;
+  //GPIOClass* gpio27;
 
   // pack prefix in nadd, call in n1, grid, dbm in n2
   char* c, buf[16];
@@ -1130,10 +1129,10 @@ void setup_peri_base_virt(
 
 int main(const int argc, char * const argv[]) {
 
-  gpio27 = new GPIOClass("27");
-  gpio27->export_gpio();
-  gpio27->setdir_gpio("out");
-  std::cout << "GPIO Pin 27 exported and direction set" << std::endl;
+  //GPIOClass* gpio27 = new GPIOClass("27");
+  //gpio27->export_gpio();
+  //gpio27->setdir_gpio("out");
+  //std::cout << "GPIO Pin 27 exported and direction set" << std::endl;
   
 
   //catch all signals (like ctrl+c, ctrl+z, ...) to ensure DMA is disabled
@@ -1142,6 +1141,8 @@ int main(const int argc, char * const argv[]) {
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = cleanupAndExit;
     sigaction(i, &sa, NULL);
+    //gpio27->setval_gpio("0");
+
   }
   atexit(cleanup);
   setSchedPriority(30);
@@ -1197,9 +1198,11 @@ int main(const int argc, char * const argv[]) {
   setup_peri_base_virt(peri_base_virt);
   // Set up DMA
   open_mbox();
+  //gpio27->setval_gpio("1");
   txon();
   setupDMA(constPage,instrPage,instrs);
   txoff();
+  //gpio27->setval_gpio("0");
 
   if (mode==TONE) {
     // Test tone mode...
@@ -1211,6 +1214,7 @@ int main(const int argc, char * const argv[]) {
     std::cout << temp.str();
     std::cout << "Press CTRL-C to exit!" << std::endl;
 
+    //gpio27->setval_gpio("1");
     txon();
     int bufPtr=0;
     std::vector <double> dma_table_freq;
@@ -1317,6 +1321,7 @@ int main(const int argc, char * const argv[]) {
         struct timeval sym_start;
         struct timeval diff;
         int bufPtr=0;
+        //gpio27->setval_gpio("1");
         txon();
         for (int i = 0; i < 162; i++) {
           gettimeofday(&sym_start,NULL);
@@ -1335,6 +1340,7 @@ int main(const int argc, char * const argv[]) {
 
         // Turn transmitter off
         txoff();
+        //gpio27->setval_gpio("0");
 
         // End timestamp
         gettimeofday(&tvEnd, NULL);
