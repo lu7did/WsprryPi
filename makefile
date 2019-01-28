@@ -13,10 +13,7 @@ else
 PI_VERSION = -DRPI23
 endif
 
-all: wspr gpioclk blink
-
-blink: blink.c
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS) $(PI_VERSION) blink.c -oblink
+all: wspr gpioclk
 
 mailbox.o: mailbox.c mailbox.h
 	$(CC) $(CFLAGS) -c mailbox.c
@@ -28,7 +25,7 @@ gpioclk: gpioclk.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS) $(PI_VERSION) gpioclk.cpp -ogpioclk
 
 clean:
-	$(RM) *.o gpioclk wspr blink
+	$(RM) *.o gpioclk wspr
 
 .PHONY: install
 install: wspr

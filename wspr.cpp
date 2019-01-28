@@ -44,9 +44,22 @@
 #include <algorithm>
 #include <pthread.h>
 #include <sys/timex.h>
-#include "GPIOClass.h"
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-using namespace std;
+// Definitions to manage GPIO pins
+//
+#define IN  0
+#define OUT 1
+#define LOW  0
+#define HIGH 1
+#define POUT 27 
+#define VALUE_MAX 30
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -239,6 +252,129 @@ static struct {
   unsigned pool_cnt;
 } mbox;
 
+
+// GPIO Export pin
+
+static int GPIOExport(int pin)
+{
+#define BUFFER_MAX 3
+	char buffer[BUFFER_MAX];
+	ssize_t bytes_written;
+	int fd;
+
+	fd = open("/sys/class/gpio/export", O_WRONLY);
+	if (-1 == fd) {
+		//fprintf(stderr, "Failed to open export for writing!\n");
+		return(-1);
+	}
+
+	bytes_written = snprintf(buffer, BUFFER_MAX, "%d", pin);
+	write(fd, buffer, bytes_written);
+	close(fd);
+	return(0);
+}
+
+// Unexport Pin 
+
+static int GPIOUnexport(int pin)
+{
+	char buffer[BUFFER_MAX];
+	ssize_t bytes_written;
+	int fd;
+
+	fd = open("/sys/class/gpio/unexport", O_WRONLY);
+	if (-1 == fd) {
+		//fprintf(stderr, "Failed to open unexport for writing!\n");
+		return(-1);
+	}
+
+	bytes_written = snprintf(buffer, BUFFER_MAX, "%d", pin);
+	write(fd, buffer, bytes_written);
+	close(fd);
+	return(0);
+}
+
+// Set GPIO pin direction (IN or OUT)
+
+static int GPIODirection(int pin, int dir)
+{
+	static const char s_directions_str[]  = "in\0out";
+
+#define DIRECTION_MAX 35
+	char path[DIRECTION_MAX];
+	int fd;
+
+	snprintf(path, DIRECTION_MAX, "/sys/class/gpio/gpio%d/direction", pin);
+	fd = open(path, O_WRONLY);
+	if (-1 == fd) {
+		//fprintf(stderr, "Failed to open gpio direction for writing!\n");
+		return(-1);
+	}
+
+	if (-1 == write(fd, &s_directions_str[IN == dir ? 0 : 3], IN == dir ? 2 : 3)) {
+		//fprintf(stderr, "Failed to set direction!\n");
+		return(-1);
+	}
+
+	close(fd);
+	return(0);
+}
+/*
+
+// Read status of a GPIO pin 
+
+static int GPIORead(int pin)
+{
+#define VALUE_MAX 30
+	char path[VALUE_MAX];
+	char value_str[3];
+	int fd;
+
+	snprintf(path, VALUE_MAX, "/sys/class/gpio/gpio%d/value", pin);
+	fd = open(path, O_RDONLY);
+	if (-1 == fd) {
+		fprintf(stderr, "Failed to open gpio value for reading!\n");
+		return(-1);
+	}
+
+	if (-1 == read(fd, value_str, 3)) {
+		fprintf(stderr, "Failed to read value!\n");
+		return(-1);
+	}
+
+	close(fd);
+
+	return(atoi(value_str));
+}
+*/
+
+// Set value for GPIO pin
+
+static int GPIOWrite(int pin, int value)
+{
+	static const char s_values_str[] = "01";
+
+	char path[VALUE_MAX];
+	int fd;
+
+	snprintf(path, VALUE_MAX, "/sys/class/gpio/gpio%d/value", pin);
+	fd = open(path, O_WRONLY);
+	if (-1 == fd) {
+		fprintf(stderr, "Failed to open gpio value for writing!\n");
+		return(-1);
+	}
+
+	if (1 != write(fd, &s_values_str[LOW == value ? 0 : 1], 1)) {
+		fprintf(stderr, "Failed to write value!\n");
+		return(-1);
+	}
+
+	close(fd);
+	return(0);
+}
+
+
+
 // Use the mbox interface to allocate a single chunk of memory to hold
 // all the pages we will need. The bus address and the virtual address
 // are saved in the mbox structure.
@@ -306,6 +442,10 @@ void disable_clock() {
 // Turn on TX
 void txon() {
 
+  // Turn PTT on
+
+  GPIOWrite(POUT,HIGH);
+
   // Set function select for GPIO4.
   // Fsel 000 => input
   // Fsel 001 => output
@@ -347,6 +487,10 @@ void txoff() {
   //struct GPCTL setupword = {6/*SRC*/, 0, 0, 0, 0, 1,0x5a};
   //ACCESS_BUS_ADDR(CM_GP0CTL_BUS) = *((int*)&setupword);
   disable_clock();
+
+  //Turn PTT Off
+ 
+  GPIOWrite(POUT,LOW);
 
 }
 
@@ -1129,11 +1273,17 @@ void setup_peri_base_virt(
 
 int main(const int argc, char * const argv[]) {
 
-  //GPIOClass* gpio27 = new GPIOClass("27");
-  //gpio27->export_gpio();
-  //gpio27->setdir_gpio("out");
-  //std::cout << "GPIO Pin 27 exported and direction set" << std::endl;
-  
+
+  if (GPIOExport(POUT)==-1) {
+    std::cerr << "Error: GPIO 27 can not be exported!" << std::endl;
+    ABORT(-1);
+  }
+   
+  if (GPIODirection(POUT,OUT)==-1) {
+    std::cerr << "Error: GPIO 27 direction can not be set!" << std::endl;
+    ABORT(-1);
+  }  
+  std::cout << "GPIO Pin 27 exported and direction set" << std::endl;
 
   //catch all signals (like ctrl+c, ctrl+z, ...) to ensure DMA is disabled
   for (int i = 0; i < 64; i++) {
@@ -1141,8 +1291,11 @@ int main(const int argc, char * const argv[]) {
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = cleanupAndExit;
     sigaction(i, &sa, NULL);
-    //gpio27->setval_gpio("0");
 
+    // Disable pin upon exit
+
+    GPIOWrite(POUT,LOW);
+    GPIOUnexport(POUT);
   }
   atexit(cleanup);
   setSchedPriority(30);
@@ -1198,11 +1351,9 @@ int main(const int argc, char * const argv[]) {
   setup_peri_base_virt(peri_base_virt);
   // Set up DMA
   open_mbox();
-  //gpio27->setval_gpio("1");
   txon();
   setupDMA(constPage,instrPage,instrs);
   txoff();
-  //gpio27->setval_gpio("0");
 
   if (mode==TONE) {
     // Test tone mode...
@@ -1214,7 +1365,6 @@ int main(const int argc, char * const argv[]) {
     std::cout << temp.str();
     std::cout << "Press CTRL-C to exit!" << std::endl;
 
-    //gpio27->setval_gpio("1");
     txon();
     int bufPtr=0;
     std::vector <double> dma_table_freq;
@@ -1321,7 +1471,6 @@ int main(const int argc, char * const argv[]) {
         struct timeval sym_start;
         struct timeval diff;
         int bufPtr=0;
-        //gpio27->setval_gpio("1");
         txon();
         for (int i = 0; i < 162; i++) {
           gettimeofday(&sym_start,NULL);
