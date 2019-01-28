@@ -44,6 +44,7 @@
 #include <algorithm>
 #include <pthread.h>
 #include <sys/timex.h>
+#include "GPIOClass.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -302,6 +303,10 @@ void disable_clock() {
 
 // Turn on TX
 void txon() {
+
+  // Set output ON
+  gpio27->setval_gpio("1");
+
   // Set function select for GPIO4.
   // Fsel 000 => input
   // Fsel 001 => output
@@ -343,6 +348,8 @@ void txoff() {
   //struct GPCTL setupword = {6/*SRC*/, 0, 0, 0, 0, 1,0x5a};
   //ACCESS_BUS_ADDR(CM_GP0CTL_BUS) = *((int*)&setupword);
   disable_clock();
+  gpio27->setval_gpio("0");
+
 }
 
 // Transmit symbol sym for tsym seconds.
@@ -592,6 +599,10 @@ void wspr(
   const char* dbm,
   unsigned char* symbols
 ) {
+
+
+  GPIOClass* gpio27;
+
   // pack prefix in nadd, call in n1, grid, dbm in n2
   char* c, buf[16];
   strncpy(buf, call, 16);
@@ -1118,6 +1129,13 @@ void setup_peri_base_virt(
 }
 
 int main(const int argc, char * const argv[]) {
+
+  gpio27 = new GPIOClass("27");
+  gpio27->export_gpio();
+  gpio27->setdir_gpio("out");
+  std::cout << "GPIO Pin 27 exported and direction set" << std::endl;
+  
+
   //catch all signals (like ctrl+c, ctrl+z, ...) to ensure DMA is disabled
   for (int i = 0; i < 64; i++) {
     struct sigaction sa;
