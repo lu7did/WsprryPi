@@ -275,7 +275,7 @@ static int GPIOExport(int pin)
 }
 
 // Unexport Pin 
-
+/*
 static int GPIOUnexport(int pin)
 {
 	char buffer[BUFFER_MAX];
@@ -293,6 +293,7 @@ static int GPIOUnexport(int pin)
 	close(fd);
 	return(0);
 }
+*/
 
 // Set GPIO pin direction (IN or OUT)
 
@@ -319,10 +320,11 @@ static int GPIODirection(int pin, int dir)
 	close(fd);
 	return(0);
 }
-/*
+
+
 
 // Read status of a GPIO pin 
-
+/*
 static int GPIORead(int pin)
 {
 #define VALUE_MAX 30
@@ -349,6 +351,7 @@ static int GPIORead(int pin)
 */
 
 // Set value for GPIO pin
+
 
 static int GPIOWrite(int pin, int value)
 {
@@ -1285,6 +1288,7 @@ int main(const int argc, char * const argv[]) {
   }  
   std::cout << "GPIO Pin 27 exported and direction set" << std::endl;
 
+
   //catch all signals (like ctrl+c, ctrl+z, ...) to ensure DMA is disabled
   for (int i = 0; i < 64; i++) {
     struct sigaction sa;
@@ -1294,8 +1298,8 @@ int main(const int argc, char * const argv[]) {
 
     // Disable pin upon exit
 
-    GPIOWrite(POUT,LOW);
-    GPIOUnexport(POUT);
+    //GPIOWrite(POUT,LOW);
+    //GPIOUnexport(POUT);
   }
   atexit(cleanup);
   setSchedPriority(30);
