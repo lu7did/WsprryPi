@@ -275,7 +275,7 @@ static int GPIOExport(int pin)
 }
 
 // Unexport Pin 
-/*
+
 static int GPIOUnexport(int pin)
 {
 	char buffer[BUFFER_MAX];
@@ -293,7 +293,7 @@ static int GPIOUnexport(int pin)
 	close(fd);
 	return(0);
 }
-*/
+
 
 // Set GPIO pin direction (IN or OUT)
 
@@ -363,12 +363,12 @@ static int GPIOWrite(int pin, int value)
 	snprintf(path, VALUE_MAX, "/sys/class/gpio/gpio%d/value", pin);
 	fd = open(path, O_WRONLY);
 	if (-1 == fd) {
-		fprintf(stderr, "Failed to open gpio value for writing!\n");
+		//fprintf(stderr, "Failed to open gpio value for writing!\n");
 		return(-1);
 	}
 
 	if (1 != write(fd, &s_values_str[LOW == value ? 0 : 1], 1)) {
-		fprintf(stderr, "Failed to write value!\n");
+		//fprintf(stderr, "Failed to write value!\n");
 		return(-1);
 	}
 
@@ -446,7 +446,7 @@ void disable_clock() {
 void txon() {
 
   // Turn PTT on
-
+  std::cout << "Transceiver PTT On" << std::endl;
   GPIOWrite(POUT,HIGH);
 
   // Set function select for GPIO4.
@@ -494,6 +494,7 @@ void txoff() {
   //Turn PTT Off
  
   GPIOWrite(POUT,LOW);
+  std::cout << "Transceiver PTT Off" << std::endl;
 
 }
 
@@ -1233,6 +1234,12 @@ void cleanup() {
 void cleanupAndExit(int sig) {
   std::cerr << "Exiting with error; caught signal: " << sig << std::endl;
   cleanup();
+  // Disable pin upon exit
+
+  GPIOWrite(POUT,LOW);
+  GPIOUnexport(POUT);
+  std::cerr << "GPIO clean up completed " << std::endl;
+
   ABORT(-1);
 }
 
@@ -1296,10 +1303,6 @@ int main(const int argc, char * const argv[]) {
     sa.sa_handler = cleanupAndExit;
     sigaction(i, &sa, NULL);
 
-    // Disable pin upon exit
-
-    //GPIOWrite(POUT,LOW);
-    //GPIOUnexport(POUT);
   }
   atexit(cleanup);
   setSchedPriority(30);
@@ -1493,7 +1496,6 @@ int main(const int argc, char * const argv[]) {
 
         // Turn transmitter off
         txoff();
-        //gpio27->setval_gpio("0");
 
         // End timestamp
         gettimeofday(&tvEnd, NULL);

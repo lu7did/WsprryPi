@@ -13,7 +13,10 @@ else
 PI_VERSION = -DRPI23
 endif
 
-all: wspr gpioclk
+all: wspr gpioclk testgpio
+
+testgpio : testgpio.c
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS) $(PI_VERSION) testgpio.c -otestgpio
 
 mailbox.o: mailbox.c mailbox.h
 	$(CC) $(CFLAGS) -c mailbox.c
@@ -25,12 +28,13 @@ gpioclk: gpioclk.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS) $(PI_VERSION) gpioclk.cpp -ogpioclk
 
 clean:
-	$(RM) *.o gpioclk wspr
+	$(RM) *.o gpioclk wspr testgpio
 
 .PHONY: install
 install: wspr
 	install -m 0755 wspr $(prefix)/bin
 	install -m 0755 gpioclk $(prefix)/bin
+	install -m 0755 testgpio $(prefix)/bin
 
 .PHONY: uninstall
 uninstall:
