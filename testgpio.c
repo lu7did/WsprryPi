@@ -1,9 +1,9 @@
 /* testgpio.c
  *
- * Raspberry Pi GPIO example using sysfs interface.
+ * Raspberry Pi GPIO test program using sysfs interface.
  * Adapted from Guillermo A. Amaral B. <g@maral.me> blink.c
  * Dr. Pedro E. Colla (LU7DID)
- * This file blinks GPIO 4 (P1-07) while reading GPIO 24 (P1_18).
+ * This file blinks GPIO 27.
  */
 
 #include <sys/stat.h>
@@ -23,8 +23,10 @@
 //#define PIN  24 /* P1-18 */
 #define POUT 27  /* P1-07 */
 
-static int
-GPIOExport(int pin)
+// GPIO Export
+// Makes "pin" GPIO available
+
+static int GPIOExport(int pin)
 {
 #define BUFFER_MAX 3
 	char buffer[BUFFER_MAX];
@@ -43,8 +45,10 @@ GPIOExport(int pin)
 	return(0);
 }
 
-static int
-GPIOUnexport(int pin)
+// GPIOUnExport
+// Remove availability of "pin" 
+
+static int GPIOUnexport(int pin)
 {
 	char buffer[BUFFER_MAX];
 	ssize_t bytes_written;
@@ -62,8 +66,10 @@ GPIOUnexport(int pin)
 	return(0);
 }
 
-static int
-GPIODirection(int pin, int dir)
+// GPIODirection
+// Establish whether the pin would be set as input (0) or output(1)
+
+static int GPIODirection(int pin, int dir)
 {
 	static const char s_directions_str[]  = "in\0out";
 
@@ -87,8 +93,10 @@ GPIODirection(int pin, int dir)
 	return(0);
 }
 /*
-static int
-GPIORead(int pin)
+// GPIO Read
+// Used to read the value of pin (either 0 or 1)
+
+static int GPIORead(int pin)
 {
 	char path[VALUE_MAX];
 	char value_str[3];
@@ -111,8 +119,10 @@ GPIORead(int pin)
 	return(atoi(value_str));
 }
 */
-static int
-GPIOWrite(int pin, int value)
+// GPIOWrite
+// Used to establish the output value of a pin
+
+static int GPIOWrite(int pin, int value)
 {
 	static const char s_values_str[] = "01";
 
@@ -135,22 +145,30 @@ GPIOWrite(int pin, int value)
 	return(0);
 }
 
-int
-main(int argc, char *argv[])
+//----------------------------------------------------------------------
+// main
+//
+// Execute the program by cycling 10 times ON/OFF the GPIO 27 pin
+//----------------------------------------------------------------------
+int main(int argc, char *argv[])
 {
 	int repeat = 10;
 
 	/*
-	 * Enable GPIO pins
+	 * Enable GPIO 27 pin
 	 */
 	if (-1 == GPIOExport(POUT))
 		return(1);
 
 	/*
-	 * Set GPIO directions
+	 * Set GPIO directions as OUTPUT
 	 */
 	if (-1 == GPIODirection(POUT, OUT))
 		return(2);
+
+        /*
+         * Cycle on/off 10 times
+         */
 
 	do {
 		/*
@@ -158,12 +176,8 @@ main(int argc, char *argv[])
 		 */
 		if (-1 == GPIOWrite(POUT, repeat % 2))
 			return(3);
-                if (repeat % 2 == 0) {
-		   fprintf(stderr, "PTT Off\n");
-                } else {
-		   fprintf(stderr, "PTT On\n");
-                }
-                //printf("Switch PTT On/off (%d)",repeat % 2);
+                fprintf(stderr, "PTT GPIO27 pin set to (%d)\n",repeat % 2);
+
 		/*
 		 * Read GPIO value
 		 */
@@ -174,8 +188,9 @@ main(int argc, char *argv[])
 	while (repeat--);
 
 	/*
-	 * Disable GPIO pins
+	 * Disable GPIO 27 pin
 	 */
+
 	if (-1 == GPIOUnexport(POUT))
 		return(4);
 
