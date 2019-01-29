@@ -359,11 +359,11 @@ static int GPIOWrite(int pin, int value)
 
 	char path[VALUE_MAX];
 	int fd;
-
+        //fprintf(stderr, "DEBUG: GPIOWrite %d\n",value);
+        
 	snprintf(path, VALUE_MAX, "/sys/class/gpio/gpio%d/value", pin);
 	fd = open(path, O_WRONLY);
 	if (-1 == fd) {
-		//fprintf(stderr, "Failed to open gpio value for writing!\n");
 		return(-1);
 	}
 
@@ -1506,7 +1506,11 @@ int main(const int argc, char * const argv[]) {
 
       } else {
         std::cout << "  Skipping transmission" << std::endl;
+        //txoff();
+        GPIOWrite(POUT,LOW);
+        std::cout << "Transceiver PTT Off (forced)" << std::endl;
         usleep(1000000);
+
       }
 
       // Advance to next band
