@@ -12,3 +12,10 @@ Issues:
   SOC. On his replacement RPi, he is planning to add galvanic isolation and
   buffering.
 
+-------
+(fork) by Dr. Pedro E. Colla
+
+  This fork has been made to enable wspr to operate a PTT line thru GPIO27
+  in order to either turn a power amplifier or switch antennas when a
+  transmission is starting and ending.
+  29-1-2019

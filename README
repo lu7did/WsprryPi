@@ -15,12 +15,19 @@ the latest Jessie-Lite.
 https://github.com/JamesP6000/WsprryPi/issues/6#issuecomment-296233932
 !!!!!!
 
+
+!!!!!!
+2019-01-29
+Please note this form had introduced a minimum change to enable wspr to 
+turn GPIO27 on when transmitting and off when not; this is used as part
+of a beacon installation to switch antennas or other suitable equipment
+when available upton transmission.
 ******
 Installation / update:
 ******
   Download and compile code:
     sudo apt-get install git
-    git clone https://github.com/JamesP6000/WsprryPi.git
+    git clone https://github.com/lu7did/WsprryPi.git
     cd WsprryPi
     make
 
@@ -247,6 +254,8 @@ Credits:
 
   Retzler András (HA7ILM) for the massive changes that were required to
   incorporate the mailbox code so that the RPi2 and RPi3 could be supported.
+
+
 
   [1] PiFM code from
       http://www.icrobotics.co.uk/wiki/index.php/Turning_the_Raspberry_Pi_Into_an_FM_Transmitter
